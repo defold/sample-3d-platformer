@@ -47,7 +47,7 @@ The player's visuals (3D models) are managed by a separate `player_visual_factor
 
 ## Character movement
 
-The player script (`game/prefabs/player/player.script`) contains a kinematic 3D character controller. It stores the velocity and transform used by Fusion. Movement and gravity handling run in `fixed_update()` at the project's 60 Hz physics rate. Each fixed step produces a new simulation position, and the interpolation component blends the model between those positions while frames are rendered.
+The player script (`game/prefabs/player/player.script`) contains a kinematic 3D character controller. Movement and gravity handling run in `fixed_update()` at the project's 60 Hz physics rate. Each fixed step produces a new simulation position, and the interpolation component blends the model between those positions while frames are rendered.
 
 Contact messages resolve penetration and determine whether a contacted surface is walkable. An additional short downward ray cast keeps the grounded state stable when collision shapes are touching but the current step produces no useful contact.
 
@@ -68,7 +68,7 @@ Read more in the Defold manuals about the [fixed update lifecycle](https://defol
 
 The player's animated model is created as a separate visual object and assigned as the target of the [object-interpolation component](https://github.com/indiesoftby/defold-object-interpolation), which is part of a community native extension developed by Indiesoft LLC.
 
-Collisions and networking use the player root position.
+Collisions use the player root position.
 
 Respawning updates the player root and the interpolation component's stored position together. This prevents the model from moving across the level while interpolating from the previous location to the spawn point.
 
