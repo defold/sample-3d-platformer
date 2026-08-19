@@ -100,3 +100,7 @@ If you spot any issue, or have troubles with some other things, write on the [De
 ## License
 
 The project code is available under the [MIT License](LICENSE).
+
+## Credits
+
+Assets used in the project by [Kenney](https://kenney.nl/assets/), based on [Kenney 3D Platformer Starter Kit](https://github.com/KenneyNL/Starter-Kit-3D-Platformer).
