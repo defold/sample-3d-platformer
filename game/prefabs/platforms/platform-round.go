@@ -1,0 +1,88 @@
+embedded_components {
+  id: "collisionobject"
+  type: "collisionobject"
+  data: "type: COLLISION_OBJECT_TYPE_STATIC\n"
+  "mass: 0.0\n"
+  "friction: 0.1\n"
+  "restitution: 0.5\n"
+  "group: \"platform\"\n"
+  "mask: \"player\"\n"
+  "embedded_collision_shape {\n"
+  "  shapes {\n"
+  "    shape_type: TYPE_BOX\n"
+  "    position {\n"
+  "    }\n"
+  "    rotation {\n"
+  "    }\n"
+  "    index: 0\n"
+  "    count: 3\n"
+  "  }\n"
+  "  data: 2.0\n"
+  "  data: 0.5\n"
+  "  data: 2.0\n"
+  "}\n"
+  ""
+}
+embedded_components {
+  id: "model"
+  type: "model"
+  data: "mesh: \"/assets/models/kenney_platformer/platform-grass-large-round.glb\"\n"
+  "name: \"{{NAME}}\"\n"
+  "materials {\n"
+  "  name: \"colormap\"\n"
+  "  material: \"/shadow_mapping/materials/mid/diffuse.material\"\n"
+  "  textures {\n"
+  "    sampler: \"tex0\"\n"
+  "    texture: \"/assets/models/kenney_platformer/Textures/colormap.png\"\n"
+  "  }\n"
+  "}\n"
+  ""
+}
+embedded_components {
+  id: "grass_left"
+  type: "model"
+  data: "mesh: \"/assets/models/kenney_platformer/grass.glb\"\n"
+  "name: \"{{NAME}}\"\n"
+  "materials {\n"
+  "  name: \"colormap\"\n"
+  "  material: \"/shadow_mapping/materials/mid/diffuse.material\"\n"
+  "  textures {\n"
+  "    sampler: \"tex0\"\n"
+  "    texture: \"/assets/models/kenney_platformer/Textures/colormap.png\"\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: -1.15
+    y: 0.5
+    z: 0.45
+  }
+  rotation {
+    y: 0.25881904
+    w: 0.9659258
+  }
+}
+embedded_components {
+  id: "grass_right"
+  type: "model"
+  data: "mesh: \"/assets/models/kenney_platformer/grass.glb\"\n"
+  "name: \"{{NAME}}\"\n"
+  "materials {\n"
+  "  name: \"colormap\"\n"
+  "  material: \"/shadow_mapping/materials/mid/diffuse.material\"\n"
+  "  textures {\n"
+  "    sampler: \"tex0\"\n"
+  "    texture: \"/assets/models/kenney_platformer/Textures/colormap.png\"\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: 1.25
+    y: 0.5
+    z: -0.35
+  }
+  rotation {
+    y: -0.34202015
+    w: 0.9396926
+  }
+}

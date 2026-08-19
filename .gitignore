@@ -1,0 +1,8 @@
+/.editor_settings
+/.internal
+/build
+/dist
+.DS_Store
+Thumbs.db
+debug.keystore
+debug.keystore.pass.txt

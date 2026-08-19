@@ -1,0 +1,32 @@
+go.property("travel", vmath.vector3(0.3, 0.12, 0.0))
+go.property("lifetime", 0.4)
+go.property("peak_scale", vmath.vector3(0.76, 0.56, 0.76))
+
+local MINIMUM_SCALE = vmath.vector3(0.01, 0.01, 0.01)
+
+---@param self table
+---@param url url
+---@param property hash
+local function remove_dust(self, url, property)
+	go.delete()
+end
+
+---@param self table
+---@param url url
+---@param property hash
+local function shrink_dust(self, url, property)
+	go.animate(".", "scale", go.PLAYBACK_ONCE_FORWARD, MINIMUM_SCALE, go.EASING_INQUAD,
+		self.lifetime * 0.45, 0.0, remove_dust)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	local start_position = go.get_position()
+	go.animate(".", "position", go.PLAYBACK_ONCE_FORWARD, start_position + self.travel,
+		go.EASING_OUTQUAD, self.lifetime)
+	go.animate(".", "scale", go.PLAYBACK_ONCE_FORWARD, self.peak_scale, go.EASING_OUTBACK,
+		self.lifetime * 0.35, 0.0, shrink_dust)
+end

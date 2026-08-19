@@ -1,0 +1,17 @@
+local MIN_FLOAT_DURATION = 5.5
+local FLOAT_DURATION_VARIATION = 2.5
+local MIN_FLOAT_HEIGHT = 0.35
+local FLOAT_HEIGHT_VARIATION = 0.35
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	local position = go.get_position()
+	local variation = math.abs(position.x * 0.13 + position.z * 0.07) % 1.0
+	local target = vmath.vector3(position)
+	target.y = target.y + MIN_FLOAT_HEIGHT + FLOAT_HEIGHT_VARIATION * variation
+	local duration = MIN_FLOAT_DURATION + FLOAT_DURATION_VARIATION * variation
+	go.animate(".", "position.y", go.PLAYBACK_LOOP_PINGPONG, target.y, go.EASING_INOUTSINE, duration)
+end

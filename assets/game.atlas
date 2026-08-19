@@ -1,0 +1,7 @@
+images {
+  image: "/assets/images/particle.png"
+}
+images {
+  image: "/assets/images/coin.png"
+}
+extrude_borders: 2

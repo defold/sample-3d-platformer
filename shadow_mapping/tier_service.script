@@ -1,0 +1,150 @@
+local tiers = require("shadow_mapping.tiers")
+
+go.property("warmup_duration", 1.5)
+go.property("settle_duration", 0.75)
+go.property("sample_duration", 2.0)
+go.property("slow_frame_percentile", 0.9)
+go.property("upgrade_frame_time", 0.0175)
+go.property("downgrade_frame_time", 0.019)
+
+local TIER_LOW = 1
+local TIER_MID = 2
+local TIER_HIGH = 3
+local TIER_ULTRA = 4
+
+local ALL_TIERS = {
+	[TIER_LOW] = tiers.LOW,
+	[TIER_MID] = tiers.MID,
+	[TIER_HIGH] = tiers.HIGH,
+	[TIER_ULTRA] = tiers.ULTRA,
+}
+
+---@class TierServiceState
+---@field warmup_duration number
+---@field settle_duration number
+---@field sample_duration number
+---@field slow_frame_percentile number
+---@field upgrade_frame_time number
+---@field downgrade_frame_time number
+---@field phase string
+---@field phase_elapsed number
+---@field phase_duration number
+---@field samples number[]
+---@field tier_index number
+---@field maximum_tier_index number
+---@field highest_allowed_index number
+---@field restart_selection boolean
+---@field decided boolean
+
+---@param samples number[]
+---@param percentile number
+---@return number
+local function calculate_percentile(samples, percentile)
+	table.sort(samples)
+	local index = math.max(1, math.ceil(#samples * percentile))
+	return samples[index]
+end
+
+---@param self TierServiceState
+---@param duration number
+local function begin_warmup(self, duration)
+	self.phase = "warmup"
+	self.phase_elapsed = 0.0
+	self.phase_duration = duration
+	self.samples = {}
+end
+
+---@param self TierServiceState
+local function begin_sampling(self)
+	self.phase = "sampling"
+	self.phase_elapsed = 0.0
+	self.samples = {}
+end
+
+---@param self TierServiceState
+---@param tier_index number
+local function apply_tier(self, tier_index)
+	self.tier_index = tier_index
+	tiers.change_tier(ALL_TIERS[tier_index])
+	print("Shadow tier test:", ALL_TIERS[tier_index])
+	begin_warmup(self, self.settle_duration)
+end
+
+---@param self TierServiceState
+local function finish_selection(self)
+	self.decided = true
+	self.phase = "decided"
+	print("Shadow tier selected:", ALL_TIERS[self.tier_index])
+end
+
+---@param self TierServiceState
+---@param slow_frame_time number
+local function evaluate_samples(self, slow_frame_time)
+	print("Shadow tier frame time:", ALL_TIERS[self.tier_index], slow_frame_time)
+	if slow_frame_time > self.downgrade_frame_time and self.tier_index > TIER_LOW then
+		self.highest_allowed_index = self.tier_index - 1
+		apply_tier(self, self.tier_index - 1)
+	elseif slow_frame_time <= self.upgrade_frame_time and self.tier_index < self.highest_allowed_index then
+		apply_tier(self, self.tier_index + 1)
+	else
+		finish_selection(self)
+	end
+end
+
+---@param self TierServiceState
+local function start_selection(self)
+	self.maximum_tier_index = tiers.is_ultra_enabled() and TIER_ULTRA or TIER_HIGH
+	self.highest_allowed_index = self.maximum_tier_index
+	self.tier_index = math.min(TIER_HIGH, self.maximum_tier_index)
+	self.decided = false
+	tiers.change_tier(ALL_TIERS[self.tier_index])
+	print("Shadow tier selection started at:", ALL_TIERS[self.tier_index])
+	begin_warmup(self, self.warmup_duration)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	assert(self.warmup_duration >= 0.0, "warmup_duration must be non-negative")
+	assert(self.settle_duration >= 0.0, "settle_duration must be non-negative")
+	assert(self.sample_duration > 0.0, "sample_duration must be positive")
+	assert(self.slow_frame_percentile > 0.0 and self.slow_frame_percentile <= 1.0,
+		"slow_frame_percentile must be in the 0..1 range")
+	assert(self.upgrade_frame_time > 0.0, "upgrade_frame_time must be positive")
+	assert(self.downgrade_frame_time > self.upgrade_frame_time,
+		"downgrade_frame_time must be greater than upgrade_frame_time")
+	self.restart_selection = true
+	self.decided = false
+end
+
+function update(self, dt)
+	if self.restart_selection then
+		self.restart_selection = false
+		start_selection(self)
+	end
+
+	if self.decided then
+		return
+	end
+
+	self.phase_elapsed = self.phase_elapsed + dt
+	if self.phase == "warmup" then
+		if self.phase_elapsed >= self.phase_duration then
+			begin_sampling(self)
+		end
+		return
+	end
+
+	self.samples[#self.samples + 1] = dt
+	if self.phase_elapsed >= self.sample_duration then
+		evaluate_samples(self, calculate_percentile(self.samples, self.slow_frame_percentile))
+	end
+end
+
+function on_message(self, message_id)
+	if message_id == tiers.MSG_DECIDE then
+		self.restart_selection = true
+	end
+end
