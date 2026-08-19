@@ -1,0 +1,61 @@
+#version 140
+
+in highp vec4 position;
+in highp mat4 mtx_world;
+in mediump vec2 texcoord0;
+in mediump vec4 color;
+in lowp float billboard_mode;
+
+out mediump vec2 var_texcoord0;
+out mediump vec4 var_color;
+
+uniform vs_uniforms
+{
+	highp mat4 view_proj;
+	highp mat4 view;
+	highp mat4 proj;
+};
+
+vec3 screen_aligned_position(vec3 center, vec2 local_position, float scale_x, float scale_y)
+{
+	vec3 camera_right = vec3(view[0][0], view[1][0], view[2][0]);
+	vec3 camera_up = vec3(view[0][1], view[1][1], view[2][1]);
+	return center + camera_right * local_position.x * scale_x + camera_up * local_position.y * scale_y;
+}
+
+vec3 axis_locked_position(vec3 center, vec2 local_position, float scale_x, float scale_y)
+{
+	vec3 world_up = vec3(0.0, 1.0, 0.0);
+	vec3 camera_position = vec3(
+		-dot(view[0].xyz, view[3].xyz),
+		-dot(view[1].xyz, view[3].xyz),
+		-dot(view[2].xyz, view[3].xyz)
+	);
+	vec3 camera_vector = camera_position - center;
+	camera_vector.y = 0.0;
+	if (length(camera_vector) < 0.0001)
+	{
+		camera_vector = vec3(0.0, 0.0, 1.0);
+	}
+	vec3 camera_right = normalize(cross(world_up, normalize(camera_vector)));
+	return center + camera_right * local_position.x * scale_x + world_up * local_position.y * scale_y;
+}
+
+void main()
+{
+	float scale_x = length(mtx_world[0].xyz);
+	float scale_y = length(mtx_world[1].xyz);
+	vec3 center_position = mtx_world[3].xyz;
+	vec3 world_position;
+	if (billboard_mode < 1.0)
+	{
+		world_position = screen_aligned_position(center_position, position.xy, scale_x, scale_y);
+	}
+	else
+	{
+		world_position = axis_locked_position(center_position, position.xy, scale_x, scale_y);
+	}
+	gl_Position = view_proj * vec4(world_position, 1.0);
+	var_texcoord0 = texcoord0;
+	var_color = vec4(color.rgb * color.a, color.a);
+}

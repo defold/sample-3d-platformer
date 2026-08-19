@@ -1,0 +1,144 @@
+local messages = require("game.messages")
+local groups = require("game.groups")
+
+local FALL_DELAY = 1.0
+local REACTIVATION_DELAY = 1.0
+local FALL_SPEED = 30.0
+local FALL_GRAVITY = 25.0
+local SHAKE_FREQUENCY = 55.0
+local SHAKE_AMPLITUDE = 0.045
+
+local ZERO_OFFSET = vmath.vector3()
+
+---@class FallingPlatformState
+---@field original_position vector3
+---@field visual_id hash
+---@field elapsed_time number
+---@field fall_at number
+---@field reactivate_at number
+---@field shake_time number
+---@field visual_has_offset boolean
+---@field is_falling boolean
+---@field fall_velocity number
+---@field collisions_enabled boolean
+
+---@param self FallingPlatformState
+local function enable_collisions(self)
+	self.collisions_enabled = true
+	msg.post("#collisionobject", "enable")
+end
+
+---@param self FallingPlatformState
+local function disable_collisions(self)
+	self.collisions_enabled = false
+	msg.post("#collisionobject", "disable")
+end
+
+---@param self FallingPlatformState
+local function reset_visual_offset(self)
+	self.shake_time = 0.0
+	if self.visual_has_offset then
+		go.set_position(ZERO_OFFSET, self.visual_id)
+		self.visual_has_offset = false
+	end
+end
+
+---@param self FallingPlatformState
+---@param dt number
+local function update_visual_shake(self, dt)
+	if self.fall_at == 0.0 or self.elapsed_time >= self.fall_at then
+		reset_visual_offset(self)
+		return
+	end
+
+	self.shake_time = self.shake_time + dt
+	local progress = math.min(1.0, self.shake_time / FALL_DELAY)
+	local amplitude = SHAKE_AMPLITUDE * (0.35 + progress * 0.65)
+	local offset = vmath.vector3(
+		math.sin(self.shake_time * SHAKE_FREQUENCY) * amplitude,
+		0.0,
+		math.cos(self.shake_time * SHAKE_FREQUENCY * 0.83) * amplitude
+	)
+	go.set_position(offset, self.visual_id)
+	self.visual_has_offset = true
+end
+
+---@param self FallingPlatformState
+local function start_falling(self)
+	self.fall_at = 0.0
+	self.reactivate_at = self.elapsed_time + REACTIVATION_DELAY
+	self.is_falling = true
+	self.fall_velocity = FALL_SPEED
+	disable_collisions(self)
+	reset_visual_offset(self)
+end
+
+---@param self FallingPlatformState
+local function reactivate(self)
+	self.reactivate_at = 0.0
+	self.is_falling = false
+	self.fall_velocity = 0.0
+	go.set_position(self.original_position)
+	enable_collisions(self)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	self.original_position = go.get_position()
+	go.update_world_transform()
+	self.visual_id = factory.create("#visual_factory", go.get_world_position(), go.get_world_rotation())
+	go.set_parent(self.visual_id, go.get_id(), true)
+	self.elapsed_time = 0.0
+	self.fall_at = 0.0
+	self.reactivate_at = 0.0
+	self.shake_time = 0.0
+	self.visual_has_offset = false
+	self.is_falling = false
+	self.fall_velocity = 0.0
+	enable_collisions(self)
+end
+
+function final(self)
+	go.delete(self.visual_id)
+end
+
+function update(self, dt)
+	update_visual_shake(self, dt)
+end
+
+function fixed_update(self, dt)
+	self.elapsed_time = self.elapsed_time + dt
+
+	if self.fall_at > 0.0 and self.elapsed_time >= self.fall_at then
+		start_falling(self)
+	end
+
+	if not self.is_falling then
+		return
+	end
+
+	if self.elapsed_time >= self.reactivate_at then
+		reactivate(self)
+		return
+	end
+
+	self.fall_velocity = self.fall_velocity + FALL_GRAVITY * dt
+	local position = go.get_position()
+	position.y = position.y - self.fall_velocity * dt
+	go.set_position(position)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id ~= messages.COLLISION_RESPONSE or message.other_group ~= groups.PLAYER then
+		return
+	end
+
+	if self.is_falling or self.fall_at > 0.0 then
+		return
+	end
+
+	self.fall_at = self.elapsed_time + FALL_DELAY
+end

@@ -1,0 +1,167 @@
+local messages = require("game.messages")
+local game_context = require("game.context")
+local tiers = require("shadow_mapping.tiers")
+
+go.property("enable_ultra", true)
+go.property("ultra_resolution", 8192)
+go.property("high_resolution", 4096)
+go.property("mid_resolution", 2048)
+
+go.property("enable_texel_snapping", true)
+
+go.property("ultra_pcf_kernel_size", 5)
+go.property("high_pcf_kernel_size", 3)
+go.property("mid_pcf_kernel_size", 1)
+go.property("ultra_pcf_sample_spacing", 0.75)
+go.property("high_pcf_sample_spacing", 0.75)
+go.property("mid_pcf_sample_spacing", 1.0)
+
+go.property("polygon_offset_factor", 2.0)
+go.property("polygon_offset_units", 4.0)
+go.property("receiver_min_bias", 0.0002)
+go.property("receiver_slope_bias", 0.0015)
+
+local SHADOW_CAMERA = "#shadow_camera"
+local LIGHT_FORWARD = vmath.vector3(0.0, 0.0, -1.0)
+
+---@class ShadowSetupState
+---@field enable_ultra boolean
+---@field ultra_resolution number
+---@field high_resolution number
+---@field mid_resolution number
+---@field maximum_resolution number
+---@field follow_distance number Distance derived from the center of the camera's near/far range.
+---@field enable_texel_snapping boolean
+---@field ultra_pcf_kernel_size number
+---@field high_pcf_kernel_size number
+---@field mid_pcf_kernel_size number
+---@field ultra_pcf_sample_spacing number
+---@field high_pcf_sample_spacing number
+---@field mid_pcf_sample_spacing number
+---@field polygon_offset_factor number
+---@field polygon_offset_units number
+---@field receiver_min_bias number
+---@field receiver_slope_bias number
+---@field target hash|nil Visual object centered in the directional shadow volume.
+
+---@param self ShadowSetupState
+---@return number|nil
+local function get_active_resolution(self)
+	if tiers.is_shadows_ignored() then
+		return nil
+	elseif tiers.is_ultra_tier() then
+		return math.min(self.ultra_resolution, self.maximum_resolution)
+	elseif tiers.is_mid_tier() then
+		return math.min(self.mid_resolution, self.maximum_resolution)
+	end
+	return math.min(self.high_resolution, self.maximum_resolution)
+end
+
+---@param value number
+---@param step number
+---@return number
+local function snap_to_step(value, step)
+	return math.floor(value / step + 0.5) * step
+end
+
+---@param self ShadowSetupState
+---@param desired_position vector3
+---@param rotation quat
+---@return vector3
+local function snap_shadow_position(self, desired_position, rotation)
+	local resolution = get_active_resolution(self)
+	if not self.enable_texel_snapping or not resolution then
+		return desired_position
+	end
+
+	local projection = camera.get_projection(SHADOW_CAMERA)
+	local shadow_width = 2.0 / math.abs(projection.c0.x)
+	local shadow_height = 2.0 / math.abs(projection.c1.y)
+	local light_space_position = vmath.rotate(vmath.conj(rotation), desired_position)
+	light_space_position.x = snap_to_step(light_space_position.x, shadow_width / resolution)
+	light_space_position.y = snap_to_step(light_space_position.y, shadow_height / resolution)
+	return vmath.rotate(rotation, light_space_position)
+end
+
+---@param self ShadowSetupState
+local function update_shadow_position(self)
+	go.update_world_transform(self.target)
+	go.update_world_transform()
+	local rotation = go.get_world_rotation()
+	local light_direction = vmath.rotate(rotation, LIGHT_FORWARD)
+	local desired_position = go.get_world_position(self.target) - light_direction * self.follow_distance
+	go.set_position(snap_shadow_position(self, desired_position, rotation))
+	go.update_world_transform()
+end
+
+---@param self ShadowSetupState
+---@param target hash
+local function follow_target(self, target)
+	self.target = target
+	update_shadow_position(self)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	assert(self.ultra_resolution >= self.high_resolution,
+		"ultra_resolution must be greater than or equal to high_resolution")
+	assert(self.high_resolution >= self.mid_resolution,
+		"high_resolution must be greater than or equal to mid_resolution")
+	assert(self.mid_resolution > 0.0, "mid_resolution must be positive")
+
+	local orthographic_zoom = camera.get_orthographic_zoom(SHADOW_CAMERA)
+	local near_z = camera.get_near_z(SHADOW_CAMERA)
+	local far_z = camera.get_far_z(SHADOW_CAMERA)
+	assert(camera.get_orthographic_mode(SHADOW_CAMERA) == camera.ORTHO_MODE_FIXED,
+		"shadow camera must use Fixed orthographic mode")
+	assert(orthographic_zoom > 0.0, "shadow camera orthographic zoom must be positive")
+	assert(near_z >= 0.0 and far_z > near_z, "invalid shadow camera near/far range")
+
+	self.target = nil
+	self.follow_distance = (near_z + far_z) * 0.5
+
+	local adapter_info = graphics.get_adapter_info()
+	local limits = adapter_info.limits
+	self.maximum_resolution = math.floor(math.min(
+		limits.max_texture_size_2d,
+		limits.max_framebuffer_width,
+		limits.max_framebuffer_height
+	))
+	local ultra_enabled = self.enable_ultra and self.ultra_resolution <= self.maximum_resolution
+	tiers.configure_ultra(ultra_enabled)
+	print("Shadow adapter:", adapter_info.family, "max resolution:", self.maximum_resolution,
+		"ultra enabled:", ultra_enabled)
+
+	game_context.shadows = msg.url()
+	msg.post("@render:", "set_directional_shadow", {
+		camera = msg.url(SHADOW_CAMERA),
+		ultra_resolution = self.ultra_resolution,
+		high_resolution = self.high_resolution,
+		mid_resolution = self.mid_resolution,
+		ultra_pcf_kernel_size = self.ultra_pcf_kernel_size,
+		high_pcf_kernel_size = self.high_pcf_kernel_size,
+		mid_pcf_kernel_size = self.mid_pcf_kernel_size,
+		ultra_pcf_sample_spacing = self.ultra_pcf_sample_spacing,
+		high_pcf_sample_spacing = self.high_pcf_sample_spacing,
+		mid_pcf_sample_spacing = self.mid_pcf_sample_spacing,
+		polygon_offset_factor = self.polygon_offset_factor,
+		polygon_offset_units = self.polygon_offset_units,
+		receiver_min_bias = self.receiver_min_bias,
+		receiver_slope_bias = self.receiver_slope_bias,
+	})
+end
+
+function late_update(self, dt)
+	if self.target and go.exists(self.target) then
+		update_shadow_position(self)
+	end
+end
+
+function on_message(self, message_id, message)
+	if message_id == messages.FOLLOW_SHADOW_TARGET then
+		follow_target(self, message.target)
+	end
+end

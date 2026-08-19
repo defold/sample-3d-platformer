@@ -1,0 +1,77 @@
+[project]
+title = 3D Platformer Starter Kit
+write_log_file = 1
+developer = Defold Foundation
+dependencies#0 = https://github.com/indiesoftby/defold-object-interpolation/archive/refs/tags/1.3.1.zip
+
+[bootstrap]
+main_collection = /game/game.collectionc
+render = /shadow_mapping/render/custom.renderc
+
+[input]
+game_binding = /input/game.input_bindingc
+gamepads = /builtins/input/default.gamepadsc
+gamepad_database = /builtins/input/gamecontrollerdb.txt
+gamepad_deadzone = 0.2
+repeat_interval = 0.05
+
+[display]
+width = 1000
+height = 800
+high_dpi = 1
+display_device_info = 1
+samples = 4
+
+[engine]
+fixed_update_frequency = 60
+max_time_step = 0.05
+
+[script]
+shared_state = 1
+
+[label]
+subpixels = 1
+
+[sprite]
+subpixels = 1
+
+[android]
+package = com.defold.examples
+
+[ios]
+bundle_identifier = com.defold.examples
+
+[osx]
+bundle_identifier = com.defold.examples
+
+[html5]
+show_fullscreen_button = 0
+show_made_with_defold = 0
+scale_mode = no_scale
+
+[graphics]
+texture_profiles = /all.texture_profiles
+max_characters = 8192
+
+[physics]
+type = 3D
+use_fixed_timestep = 1
+max_fixed_timesteps = 0
+
+[model]
+max_count = 1024
+
+[light]
+max_count = 8
+
+[object_interpolation]
+max_count = 1024
+
+[render]
+clear_color_red = 0.3
+clear_color_green = 0.4
+clear_color_blue = 0.8
+
+[native_extension]
+app_manifest = /game.appmanifest
+

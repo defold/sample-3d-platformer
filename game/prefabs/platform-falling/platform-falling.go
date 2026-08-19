@@ -1,0 +1,35 @@
+components {
+  id: "platform-falling"
+  component: "/game/prefabs/platform-falling/platform-falling.script"
+}
+embedded_components {
+  id: "visual_factory"
+  type: "factory"
+  data: "prototype: \"/game/prefabs/platform-falling/platform_falling_visual.go\"\n"
+  ""
+}
+embedded_components {
+  id: "collisionobject"
+  type: "collisionobject"
+  data: "type: COLLISION_OBJECT_TYPE_KINEMATIC\n"
+  "mass: 0.0\n"
+  "friction: 0.1\n"
+  "restitution: 0.5\n"
+  "group: \"platform\"\n"
+  "mask: \"player\"\n"
+  "embedded_collision_shape {\n"
+  "  shapes {\n"
+  "    shape_type: TYPE_BOX\n"
+  "    position {\n"
+  "    }\n"
+  "    rotation {\n"
+  "    }\n"
+  "    index: 0\n"
+  "    count: 3\n"
+  "  }\n"
+  "  data: 1.0\n"
+  "  data: 0.5\n"
+  "  data: 1.0\n"
+  "}\n"
+  ""
+}

@@ -1,0 +1,85 @@
+-- Collectible coin that respawns after a cooldown.
+
+local game_context = require("game.context")
+local messages = require("game.messages")
+local groups = require("game.groups")
+
+local RESPAWN_DELAY = 6.0
+local ROTATION_SPEED = math.rad(55.0)
+local FLOAT_SPEED = 1.8
+local FLOAT_HEIGHT = 0.22
+local TAU = math.pi * 2.0
+
+---@class CoinState
+---@field original_position vector3
+---@field float_time number
+---@field collected boolean
+---@field visual_enabled boolean
+
+---@param self CoinState
+local function enable_coin(self)
+	if self.visual_enabled then
+		return
+	end
+	self.visual_enabled = true
+	particlefx.stop("#coincollect", { clear = true })
+	particlefx.play("#coinsparkle")
+	msg.post("#model", "enable")
+	msg.post("#collisionobject", "enable")
+end
+
+---@param self CoinState
+local function disable_coin(self)
+	if not self.visual_enabled then
+		return
+	end
+	self.visual_enabled = false
+	particlefx.stop("#coinsparkle")
+	particlefx.play("#coincollect")
+	msg.post("#model", "disable")
+	msg.post("#collisionobject", "disable")
+end
+
+---@param self CoinState
+local function collect(self)
+	if self.collected then
+		return
+	end
+
+	self.collected = true
+	disable_coin(self)
+	msg.post(game_context.local_player, messages.COIN_COLLECTED)
+	timer.delay(RESPAWN_DELAY, false, function()
+		self.collected = false
+		enable_coin(self)
+	end)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	self.original_position = go.get_position()
+	self.float_time = math.abs(self.original_position.x * 0.21 + self.original_position.z * 0.13) % TAU
+	self.collected = false
+	self.visual_enabled = true
+end
+
+function update(self, dt)
+	local rotation = go.get_rotation()
+	go.set_rotation(rotation * vmath.quat_rotation_y(ROTATION_SPEED * dt))
+
+	local position = vmath.vector3(self.original_position)
+	self.float_time = self.float_time + FLOAT_SPEED * dt
+	position.y = position.y + math.sin(self.float_time) * FLOAT_HEIGHT
+	go.set_position(position)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == messages.COLLISION_RESPONSE
+	and message.other_group == groups.PLAYER
+	and message.other_id == game_context.local_player then
+		collect(self)
+	end
+end

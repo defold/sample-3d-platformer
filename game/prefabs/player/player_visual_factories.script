@@ -1,0 +1,19 @@
+local game_context = require("game.context")
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	game_context.player_visual_factories = {
+		msg.url("#oobi"),
+		msg.url("#oodi"),
+		msg.url("#ooli"),
+		msg.url("#oopi"),
+		msg.url("#oozi"),
+	}
+end
+
+function final(self)
+	game_context.player_visual_factories = nil
+end

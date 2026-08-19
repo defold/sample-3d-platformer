@@ -1,0 +1,54 @@
+local game_context = require("game.context")
+local messages = require("game.messages")
+
+local MIN_COINS_TO_WIN = 15
+local PLAYER_SPAWN_POSITION = vmath.vector3(0.0, 3.0, 0.0)
+
+---@class GameState
+---@field won boolean
+
+local function spawn_player()
+	factory.create("#playerfactory", PLAYER_SPAWN_POSITION)
+end
+
+local function reset_player()
+	msg.post(game_context.local_player, messages.RESET_PLAYER)
+end
+
+---@param self GameState
+---@param won boolean
+local function set_win_state(self, won)
+	self.won = won
+	msg.post(game_context.ui, messages.GAME_WIN_STATE_CHANGED, { won = won })
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	game_context.game = msg.url()
+	self.won = false
+	msg.post("#ui", messages.SET_GAME_GOAL, { coin_goal = MIN_COINS_TO_WIN })
+	timer.delay(0.0, false, function()
+		spawn_player()
+	end)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id ~= messages.FLAG_REACHED then
+		return
+	end
+
+	local player_url = msg.url(nil, message.player_id, "player")
+	local coins = go.get(player_url, "coins")
+	if coins < MIN_COINS_TO_WIN or self.won then
+		return
+	end
+
+	set_win_state(self, true)
+	timer.delay(5.0, false, function()
+		set_win_state(self, false)
+		reset_player()
+	end)
+end

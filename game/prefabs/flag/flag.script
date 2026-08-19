@@ -1,0 +1,13 @@
+local game_context = require("game.context")
+local messages = require("game.messages")
+local groups = require("game.groups")
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function on_message(self, message_id, message, sender)
+	if message_id == messages.COLLISION_RESPONSE and message.other_group == groups.PLAYER then
+		msg.post(game_context.game, messages.FLAG_REACHED, { player_id = message.other_id })
+	end
+end

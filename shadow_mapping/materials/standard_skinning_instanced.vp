@@ -1,0 +1,62 @@
+#version 140
+
+in highp vec4 position;
+in mediump vec2 texcoord0;
+in mediump vec3 normal;
+in mediump vec4 bone_weights;
+in mediump vec4 bone_indices;
+in highp mat4 mtx_world;
+in highp mat4 mtx_normal;
+in mediump vec4 animation_data;
+
+out highp vec4 var_position;
+out mediump vec3 var_normal;
+out mediump vec2 var_texcoord0;
+out highp mat4 var_view;
+out highp vec4 var_shadow_coord;
+
+uniform vs_uniforms
+{
+	highp mat4 mtx_view;
+	highp mat4 mtx_proj;
+	highp mat4 mtx_shadow;
+};
+
+// Skinned materials must declare pose_matrix_cache immediately after tex0.
+// Defold binds the pose cache to the first free model texture slot at runtime,
+// so shadow_map has to use a later sampler slot.
+#include "/builtins/materials/skinning.glsl"
+
+mediump vec3 get_animated_normal(mediump vec3 local_normal)
+{
+#ifdef EDITOR
+	return local_normal;
+#else
+	if (animation_data.y <= 0.0)
+	{
+		return local_normal;
+	}
+
+	mediump vec4 base_normal = vec4(local_normal, 0.0);
+	mediump vec4 skinned_normal = vec4(0.0);
+	skinned_normal += bone_weights.x * (get_bone_matrix(int(bone_indices.x)) * base_normal);
+	skinned_normal += bone_weights.y * (get_bone_matrix(int(bone_indices.y)) * base_normal);
+	skinned_normal += bone_weights.z * (get_bone_matrix(int(bone_indices.z)) * base_normal);
+	skinned_normal += bone_weights.w * (get_bone_matrix(int(bone_indices.w)) * base_normal);
+	return skinned_normal.xyz;
+#endif
+}
+
+void main()
+{
+	highp vec4 skinned_position = get_skinned_position(position);
+	mediump vec3 skinned_normal = get_animated_normal(normal);
+	highp vec4 world_position = mtx_world * vec4(skinned_position.xyz, 1.0);
+	highp vec4 view_position = mtx_view * world_position;
+	var_position = view_position;
+	var_normal = normalize((mtx_normal * vec4(skinned_normal, 0.0)).xyz);
+	var_texcoord0 = texcoord0;
+	var_view = mtx_view;
+	var_shadow_coord = mtx_shadow * world_position;
+	gl_Position = mtx_proj * view_position;
+}

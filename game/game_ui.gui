@@ -1,0 +1,89 @@
+script: "/game/game_ui.gui_script"
+fonts {
+  name: "lilita_one_regular"
+  font: "/assets/fonts/lilita_one_regular.font"
+}
+textures {
+  name: "game"
+  texture: "/assets/game.atlas"
+}
+nodes {
+  position {
+    x: 85.0
+    y: 715.0
+  }
+  scale {
+    x: 0.5
+    y: 0.5
+  }
+  type: TYPE_BOX
+  texture: "game/coin"
+  id: "coin"
+  xanchor: XANCHOR_LEFT
+  yanchor: YANCHOR_TOP
+  inherit_alpha: true
+  size_mode: SIZE_MODE_AUTO
+}
+nodes {
+  position {
+    x: 85.0
+  }
+  scale {
+    x: 2.0
+    y: 2.0
+    z: 2.0
+  }
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  type: TYPE_TEXT
+  text: "x 0 / 15"
+  font: "lilita_one_regular"
+  id: "coin_text"
+  pivot: PIVOT_W
+  parent: "coin"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 500.0
+    y: 740.0
+  }
+  scale {
+    x: 0.8
+    y: 0.8
+  }
+  size {
+    x: 520.0
+    y: 90.0
+  }
+  type: TYPE_TEXT
+  text: "Collect 15 coins\nand reach the flag"
+  font: "lilita_one_regular"
+  id: "goal_label"
+  yanchor: YANCHOR_TOP
+  line_break: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 500.0
+    y: 400.0
+  }
+  scale {
+    x: 2.0
+    y: 2.0
+  }
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  type: TYPE_TEXT
+  text: "You win!"
+  font: "lilita_one_regular"
+  id: "win_label"
+  inherit_alpha: true
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT

@@ -1,0 +1,20 @@
+local game_context = require("game.context")
+local messages = require("game.messages")
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	game_context.sounds = msg.url()
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == messages.SOUND_COIN_COLLECTED then
+		sound.play("#coin")
+	elseif message_id == messages.SOUND_JUMP then
+		sound.play("#jump")
+	elseif message_id == messages.SOUND_LAND then
+		sound.play("#land")
+	end
+end

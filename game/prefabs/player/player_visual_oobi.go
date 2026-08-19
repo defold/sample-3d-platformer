@@ -1,0 +1,18 @@
+embedded_components {
+  id: "model"
+  type: "model"
+  data: "mesh: \"/assets/models/kenney_platformer-kit/character-oobi.glb\"\n"
+  "skeleton: \"/assets/models/kenney_platformer-kit/character-oobi.glb\"\n"
+  "animations: \"/assets/models/kenney_platformer-kit/character-oobi.glb\"\n"
+  "default_animation: \"idle\"\n"
+  "name: \"{{NAME}}\"\n"
+  "materials {\n"
+  "  name: \"colormap\"\n"
+  "  material: \"/shadow_mapping/materials/high/diffuse_skinning.material\"\n"
+  "  textures {\n"
+  "    sampler: \"tex0\"\n"
+  "    texture: \"/assets/models/kenney_platformer-kit/Textures/colormap.png\"\n"
+  "  }\n"
+  "}\n"
+  ""
+}

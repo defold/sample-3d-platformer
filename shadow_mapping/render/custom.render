@@ -1,0 +1,37 @@
+script: "/shadow_mapping/render/custom.render_script"
+render_resources {
+  name: "shadow_material"
+  path: "/shadow_mapping/materials/low/shadow.material"
+}
+render_resources {
+  name: "static_model_low_material"
+  path: "/shadow_mapping/materials/low/diffuse.material"
+}
+render_resources {
+  name: "static_model_mid_material"
+  path: "/shadow_mapping/materials/mid/diffuse.material"
+}
+render_resources {
+  name: "static_model_high_material"
+  path: "/shadow_mapping/materials/high/diffuse.material"
+}
+render_resources {
+  name: "static_model_ultra_material"
+  path: "/shadow_mapping/materials/high/diffuse.material"
+}
+render_resources {
+  name: "skinned_model_low_material"
+  path: "/shadow_mapping/materials/low/diffuse_skinning.material"
+}
+render_resources {
+  name: "skinned_model_mid_material"
+  path: "/shadow_mapping/materials/mid/diffuse_skinning.material"
+}
+render_resources {
+  name: "skinned_model_high_material"
+  path: "/shadow_mapping/materials/high/diffuse_skinning.material"
+}
+render_resources {
+  name: "skinned_model_ultra_material"
+  path: "/shadow_mapping/materials/high/diffuse_skinning.material"
+}

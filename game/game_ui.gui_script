@@ -1,0 +1,81 @@
+local game_context = require("game.context")
+local messages = require("game.messages")
+
+local GOAL_DISPLAY_TIME = 3.0
+local GOAL_ENTER_DURATION = 0.5
+local GOAL_EXIT_DURATION = 0.4
+local GOAL_OFFSCREEN_OFFSET = vmath.vector3(0.0, 140.0, 0.0)
+
+---@class GameUiState
+---@field coin_text node
+---@field goal_label node
+---@field win_label node
+---@field goal_position vector3
+---@field goal_offscreen_position vector3
+---@field coin_amount number
+---@field coin_goal number
+---@field goal_timer any|nil
+
+---@param self GameUiState
+---@param node node
+local function on_goal_exit_complete(self, node)
+	gui.set_enabled(node, false)
+end
+
+---@param self GameUiState
+local function hide_goal(self)
+	self.goal_timer = nil
+	gui.animate(self.goal_label, gui.PROP_POSITION, self.goal_offscreen_position,
+		gui.EASING_INBACK, GOAL_EXIT_DURATION, 0.0, on_goal_exit_complete)
+end
+
+---@param self GameUiState
+local function show_goal(self)
+	if self.goal_timer then
+		timer.cancel(self.goal_timer)
+		self.goal_timer = nil
+	end
+	gui.cancel_animations(self.goal_label, gui.PROP_POSITION)
+	gui.set_position(self.goal_label, self.goal_offscreen_position)
+	gui.set_enabled(self.goal_label, true)
+	gui.animate(self.goal_label, gui.PROP_POSITION, self.goal_position,
+		gui.EASING_OUTBACK, GOAL_ENTER_DURATION)
+	self.goal_timer = timer.delay(GOAL_DISPLAY_TIME, false, hide_goal)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	game_context.ui = msg.url()
+	self.coin_text = gui.get_node("coin_text")
+	self.goal_label = gui.get_node("goal_label")
+	self.win_label = gui.get_node("win_label")
+	self.goal_position = gui.get_position(self.goal_label)
+	self.goal_offscreen_position = self.goal_position + GOAL_OFFSCREEN_OFFSET
+	self.coin_amount = 0
+	self.coin_goal = 15
+	self.goal_timer = nil
+	gui.set_enabled(self.goal_label, false)
+	gui.set_enabled(self.win_label, false)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == messages.UPDATE_COIN_UI then
+		self.coin_amount = message.amount
+		gui.set_text(self.coin_text, ("x %d / %d"):format(self.coin_amount, self.coin_goal))
+	elseif message_id == messages.SET_GAME_GOAL then
+		self.coin_goal = message.coin_goal
+		gui.set_text(self.coin_text, ("x %d / %d"):format(self.coin_amount, self.coin_goal))
+		gui.set_text(self.goal_label, ("Collect %d coins\nand reach the flag"):format(self.coin_goal))
+		show_goal(self)
+	elseif message_id == messages.GAME_WIN_STATE_CHANGED then
+		if message.won then
+			gui.set_enabled(self.win_label, true)
+			gui.set_text(self.win_label, "You win!")
+		else
+			gui.set_enabled(self.win_label, false)
+		end
+	end
+end

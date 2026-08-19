@@ -1,0 +1,173 @@
+local game_context = require("game.context")
+
+-- Properties of the camera follow script:
+go.property("target_height", 1.0)
+go.property("min_distance", 4.0)
+go.property("max_distance", 12.0)
+go.property("sensitivity", 0.5)
+go.property("position_smooth_speed", 10.0)
+go.property("rotation_speed", 120.0)
+go.property("rotation_smooth_speed", 20.0)
+go.property("mouse_rotation_speed", 0.3)
+go.property("zoom_step", 1.0)
+go.property("zoom_smooth_speed", 10.0)
+go.property("min_pitch", -75.0)
+go.property("max_pitch", -5.0)
+
+-- Pre hashed urls, properties names, messages, and action ids:
+local CAMERA_OFFSET = hash("/camera_offset")
+local CAMERA = hash("/camera")
+local EULER_X = hash("euler.x")
+local EULER_Y = hash("euler.y")
+local MESSAGE_FOLLOW = hash("follow")
+local ACTION_CAMERA_LEFT = hash("camera_left")
+local ACTION_CAMERA_RIGHT = hash("camera_right")
+local ACTION_CAMERA_UP = hash("camera_up")
+local ACTION_CAMERA_DOWN = hash("camera_down")
+local ACTION_CAMERA_ZOOM_IN = hash("camera_zoom_in")
+local ACTION_CAMERA_ZOOM_OUT = hash("camera_zoom_out")
+local ACTION_GAMEPAD_DISCONNECTED = hash("gamepad_disconnected")
+local ACTION_RELEASE_MOUSE = hash("release_mouse")
+local ACTION_TOUCH = hash("touch")
+
+---@class CameraFollowState
+---@field target url|nil Interpolated visual followed by the camera operator.
+---@field left number
+---@field right number
+---@field up number
+---@field down number
+---@field target_height number
+---@field min_distance number
+---@field max_distance number
+---@field sensitivity number
+
+---Helper function for gamepad inputs strength processing
+---@param action table
+---@return number
+local function input_strength(action)
+	if action.released then
+		return 0.0
+	end
+	return math.abs(action.value or 1.0)
+end
+
+---Helper function to detect zoom input
+---@param action table
+---@return boolean
+local function zoom_pressed(action)
+	return action.pressed or (not action.gamepad and action.value == 1)
+end
+
+---Helper function to reset rotation input
+---@param self CameraFollowState
+local function reset_rotation_input(self)
+	self.left = 0.0
+	self.right = 0.0
+	self.up = 0.0
+	self.down = 0.0
+end
+
+---Helper function to rotate the camera around character
+---@param self CameraFollowState
+---@param yaw number
+---@param pitch number
+local function rotate(self, yaw, pitch)
+	self.target_yaw = self.target_yaw + yaw * self.sensitivity
+	local min_pitch = math.min(self.max_pitch, self.target_pitch + pitch * self.sensitivity)
+	self.target_pitch = math.max(self.min_pitch, min_pitch)
+end
+
+---Helper function to zoom the camera view
+---@param self CameraFollowState
+---@param amount number
+local function zoom(self, amount)
+	local min_distance = math.min(self.max_distance, self.target_distance + amount)
+	self.target_distance = math.max(self.min_distance, min_distance)
+end
+
+-------------------------------
+-- Defold lifecycle functions:
+-------------------------------
+
+function init(self)
+	game_context.camera = msg.url()
+	msg.post(".", "acquire_input_focus")
+	reset_rotation_input(self)
+
+	self.target_yaw = go.get(".", EULER_Y)
+	self.target_pitch = go.get(CAMERA_OFFSET, EULER_X)
+	self.target_distance = go.get_position(CAMERA).z
+end
+
+function late_update(self, dt)
+	if not self.target or not go.exists(self.target) then
+		return
+	end
+
+	-- Smooth position
+	local target_position = go.get_position(self.target)
+	target_position.y = target_position.y + self.target_height
+
+	local position = go.get_position()
+	local follow_alpha = 1.0 - math.exp(-self.position_smooth_speed * dt)
+
+	go.set_position(position + (target_position - position) * follow_alpha)
+
+	-- Camera input
+	local yaw = (self.left - self.right) * self.rotation_speed * dt
+	local pitch = (self.up - self.down) * self.rotation_speed * dt
+	rotate(self, yaw, pitch)
+
+	-- Smooth rotation
+	local rotation_alpha = 1.0 - math.exp(-self.rotation_smooth_speed * dt)
+
+	local current_yaw = go.get(".", EULER_Y)
+	local current_pitch = go.get(CAMERA_OFFSET, EULER_X)
+
+	current_yaw = current_yaw + (self.target_yaw - current_yaw) * rotation_alpha
+	current_pitch = current_pitch + (self.target_pitch - current_pitch) * rotation_alpha
+
+	go.set(".", EULER_Y, current_yaw)
+	go.set(CAMERA_OFFSET, EULER_X, current_pitch)
+
+	-- Smooth zoom
+	local camera_position = go.get_position(CAMERA)
+	local zoom_alpha = 1.0 - math.exp(-self.zoom_smooth_speed * dt)
+
+	camera_position.z = camera_position.z
+	+ (self.target_distance - camera_position.z) * zoom_alpha
+
+	go.set_position(camera_position, CAMERA)
+end
+
+function on_message(self, message_id, message)
+	if message_id == MESSAGE_FOLLOW then
+		self.target = message.url
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == ACTION_RELEASE_MOUSE and action.pressed then
+		window.set_mouse_lock(false)
+		return true
+	elseif action_id == ACTION_TOUCH and self.target and action.pressed and not window.get_mouse_lock() then
+		window.set_mouse_lock(true)
+		return true
+	elseif action_id == ACTION_CAMERA_LEFT then
+		self.left = input_strength(action)
+	elseif action_id == ACTION_CAMERA_RIGHT then
+		self.right = input_strength(action)
+	elseif action_id == ACTION_CAMERA_UP then
+		self.up = input_strength(action)
+	elseif action_id == ACTION_CAMERA_DOWN then
+		self.down = input_strength(action)
+	elseif action_id == ACTION_CAMERA_ZOOM_IN and zoom_pressed(action) then
+		zoom(self, -self.zoom_step)
+	elseif action_id == ACTION_CAMERA_ZOOM_OUT and zoom_pressed(action) then
+		zoom(self, self.zoom_step)
+	elseif action_id == ACTION_GAMEPAD_DISCONNECTED then
+		reset_rotation_input(self)
+	elseif not action_id and window.get_mouse_lock() then
+		rotate(self, -action.dx * self.mouse_rotation_speed, action.dy * self.mouse_rotation_speed)
+	end
+end
