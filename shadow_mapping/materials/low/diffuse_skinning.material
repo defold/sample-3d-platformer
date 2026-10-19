@@ -16,6 +16,12 @@ vertex_constants {
   type: CONSTANT_TYPE_USER_MATRIX4
   value {
   }
+  value {
+  }
+  value {
+  }
+  value {
+  }
 }
 samplers {
   name: "tex0"
