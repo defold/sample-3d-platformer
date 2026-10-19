@@ -21,7 +21,7 @@ It's MIT licensed, you can use it freely, e.g. as a starting point for your own 
 
 ## Run the project
 
-1. Download and install [Defold](https://defold.com/download/). This project currently requires Defold 1.13.1 or newer because it uses the Light component.
+1. Download and install [Defold](https://defold.com/download/). This project currently requires Defold 1.14.0 or newer.
 2. Start Defold and choose **Open From Disk…**.
 3. Select this project's `game.project` file and open the project.
 4. In an opened editor select <kbd>Project ▸ Build</kbd> to build and run the game locally.
