@@ -17,7 +17,6 @@ vec3 shadowed_diffuse_lambert(vec3 view_normal, vec3 view_position)
 		{
 			highp vec3 direction_to_light = -world_to_view_dir(lights[i].direction_range.xyz);
 			contribution *= directional_shadow_visibility(
-				shadow_map,
 				var_shadow_coord,
 				shadow_texel_size.xy,
 				shadow_params,

@@ -1,8 +1,9 @@
 #ifndef PLATFORMER_DIRECTIONAL_SHADOWS_GLSL
 #define PLATFORMER_DIRECTIONAL_SHADOWS_GLSL
 
+// The including shader must declare shadow_map as a sampler2D uniform.
+
 highp float directional_shadow_compare(
-	sampler2D shadow_texture,
 	highp vec2 uv,
 	highp float receiver_depth)
 {
@@ -10,7 +11,7 @@ highp float directional_shadow_compare(
 	{
 		return 1.0;
 	}
-	highp float stored_depth = texture(shadow_texture, uv).r;
+	highp float stored_depth = texture(shadow_map, uv).r;
 	return receiver_depth <= stored_depth ? 1.0 : 0.0;
 }
 
@@ -25,7 +26,6 @@ highp float directional_shadow_receiver_bias(
 }
 
 highp float directional_shadow_pcf_3x3(
-	sampler2D shadow_texture,
 	highp vec2 center_uv,
 	highp float receiver_depth,
 	highp vec2 sample_step)
@@ -36,14 +36,13 @@ highp float directional_shadow_pcf_3x3(
 		for (int x = -1; x <= 1; ++x)
 		{
 			highp vec2 offset = vec2(float(x), float(y)) * sample_step;
-			visibility += directional_shadow_compare(shadow_texture, center_uv + offset, receiver_depth);
+			visibility += directional_shadow_compare(center_uv + offset, receiver_depth);
 		}
 	}
 	return visibility / 9.0;
 }
 
 highp float directional_shadow_pcf_5x5(
-	sampler2D shadow_texture,
 	highp vec2 center_uv,
 	highp float receiver_depth,
 	highp vec2 sample_step)
@@ -54,14 +53,13 @@ highp float directional_shadow_pcf_5x5(
 		for (int x = -2; x <= 2; ++x)
 		{
 			highp vec2 offset = vec2(float(x), float(y)) * sample_step;
-			visibility += directional_shadow_compare(shadow_texture, center_uv + offset, receiver_depth);
+			visibility += directional_shadow_compare(center_uv + offset, receiver_depth);
 		}
 	}
 	return visibility / 25.0;
 }
 
 highp float directional_shadow_visibility(
-	sampler2D shadow_texture,
 	highp vec4 shadow_coord,
 	highp vec2 shadow_texel_size,
 	highp vec4 shadow_params,
@@ -89,7 +87,6 @@ highp float directional_shadow_visibility(
 	if (kernel_size == 3)
 	{
 		return directional_shadow_pcf_3x3(
-			shadow_texture,
 			projected.xy,
 			receiver_depth,
 			shadow_texel_size * shadow_params.y
@@ -98,13 +95,12 @@ highp float directional_shadow_visibility(
 	if (kernel_size == 5)
 	{
 		return directional_shadow_pcf_5x5(
-			shadow_texture,
 			projected.xy,
 			receiver_depth,
 			shadow_texel_size * shadow_params.y
 		);
 	}
-	return directional_shadow_compare(shadow_texture, projected.xy, receiver_depth);
+	return directional_shadow_compare(projected.xy, receiver_depth);
 }
 
 #endif
