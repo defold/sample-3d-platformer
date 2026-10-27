@@ -3,7 +3,6 @@
 in highp vec4 var_position;
 in mediump vec3 var_normal;
 in mediump vec2 var_texcoord0;
-in highp mat4 var_view;
 in highp vec4 var_shadow_coord;
 
 out vec4 out_fragColor;
@@ -20,6 +19,7 @@ uniform fs_uniforms
 };
 
 #define MAX_LIGHT_COUNT 8
+#include "/shadow_mapping/materials/model_uniforms.glsl"
 #include "/builtins/materials/lighting.glsl"
 #include "/shadow_mapping/materials/directional_shadows.glsl"
 #include "/shadow_mapping/materials/shadowed_lighting.glsl"
