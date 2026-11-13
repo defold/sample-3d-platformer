@@ -17,6 +17,6 @@ void main()
 {
 	vec4 color = texture(tex0, var_texcoord0);
 	vec3 view_normal = normalize(var_normal);
-	vec3 lighting = ambient_light() + diffuse_lambert(view_normal, var_position.xyz);
+	vec3 lighting = ambient_light() + diffuse_lambert(view_normal, var_position.xyz, var_view);
 	out_fragColor = vec4(color.rgb * lighting, color.a);
 }

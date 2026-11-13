@@ -34,15 +34,16 @@ void main()
 			discard;
 		}
 		out_fragColor = vec4(1.0);
-		return;
 	}
-
-	vec3 view_normal = normalize(var_normal);
-	vec3 diffuse_light = diffuse_lambert(view_normal, var_position.xyz);
-	if (shadow_pass.y > 0.5)
+	else
 	{
-		diffuse_light = shadowed_diffuse_lambert(view_normal, var_position.xyz);
+		vec3 view_normal = normalize(var_normal);
+		vec3 diffuse_light = diffuse_lambert(view_normal, var_position.xyz, var_view);
+		if (shadow_pass.y > 0.5)
+		{
+			diffuse_light = shadowed_diffuse_lambert(view_normal, var_position.xyz);
+		}
+		vec3 lighting = ambient_light() + diffuse_light;
+		out_fragColor = vec4(color.rgb * lighting, color.a);
 	}
-	vec3 lighting = ambient_light() + diffuse_light;
-	out_fragColor = vec4(color.rgb * lighting, color.a);
 }
