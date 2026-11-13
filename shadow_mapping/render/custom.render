@@ -4,6 +4,10 @@ render_resources {
   path: "/shadow_mapping/materials/low/shadow.material"
 }
 render_resources {
+  name: "shadow_skinned_material"
+  path: "/shadow_mapping/materials/low/shadow_skinning.material"
+}
+render_resources {
   name: "static_model_low_material"
   path: "/shadow_mapping/materials/low/diffuse.material"
 }

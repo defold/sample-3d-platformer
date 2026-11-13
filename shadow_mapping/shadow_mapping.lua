@@ -38,6 +38,7 @@ local HIGH_BUFFER_NAME = "directional_shadow_high"
 local MID_BUFFER_NAME = "directional_shadow_mid"
 local ULTRA_BUFFER_NAME = "directional_shadow_ultra"
 local SHADOW_MATERIAL_RESOURCE_NAME = "shadow_material"
+local SHADOW_SKINNED_MATERIAL_RESOURCE_NAME = "shadow_skinned_material"
 local STATIC_MODEL_MATERIAL_RESOURCE_NAME = "static_model"
 local SKINNED_MODEL_MATERIAL_RESOURCE_NAME = "skinned_model"
 local SHADOW_SAMPLER = "shadow_map"
@@ -302,9 +303,11 @@ function M.render_shadow()
 	render.disable_material()
 	-- Animated component bounds can lag behind the skinned pose. Avoid CPU
 	-- frustum rejection here and let the shadow-camera raster pass clip it.
-	-- The component's depth-only material keeps the pose cache available without
-	-- sampling the shadow target while writing to it, which WebGL rejects.
+	-- Always use a depth-only shader, including for components whose own
+	-- material samples the shadow map. WebGL rejects sampling an attached target.
+	render.enable_material(SHADOW_SKINNED_MATERIAL_RESOURCE_NAME)
 	render.draw(M.shadow_model_skinned_pred, M.shadow_depth_skinned_draw_options)
+	render.disable_material()
 
 	render.set_polygon_offset(0.0, 0.0)
 	render.disable_state(graphics.STATE_POLYGON_OFFSET_FILL)
