@@ -12,10 +12,10 @@ vec3 shadowed_diffuse_lambert(vec3 view_normal, vec3 view_position)
 			break;
 		}
 
-		vec3 contribution = diffuse_lambert(i, view_normal, view_position);
+		vec3 contribution = diffuse_lambert(i, view_normal, view_position, var_view);
 		if (int(lights[i].params.x) == LIGHT_DIRECTIONAL)
 		{
-			highp vec3 direction_to_light = -world_to_view_dir(lights[i].direction_range.xyz);
+			highp vec3 direction_to_light = -world_to_view_dir(lights[i].direction_range.xyz, var_view);
 			contribution *= directional_shadow_visibility(
 				var_shadow_coord,
 				shadow_texel_size.xy,
