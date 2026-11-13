@@ -67,12 +67,29 @@ local function reset_rotation_input(self)
 	self.down = 0.0
 end
 
+---Wrap an angle in degrees to the range [-180, 180).
+---@param angle number
+---@return number
+local function wrap_angle(angle)
+	return (angle + 180) % 360 - 180
+end
+
+---Linearly interpolate angles in degrees along the shortest path.
+---@param from number
+---@param to number
+---@param weight number
+---@return number
+local function lerp_angle(from, to, weight)
+	local difference = wrap_angle(to - from)
+	return from + difference * weight
+end
+
 ---Helper function to rotate the camera around character
 ---@param self CameraFollowState
 ---@param yaw number
 ---@param pitch number
 local function rotate(self, yaw, pitch)
-	self.target_yaw = self.target_yaw + yaw * self.sensitivity
+	self.target_yaw = wrap_angle(self.target_yaw + yaw * self.sensitivity)
 	local min_pitch = math.min(self.max_pitch, self.target_pitch + pitch * self.sensitivity)
 	self.target_pitch = math.max(self.min_pitch, min_pitch)
 end
@@ -124,7 +141,7 @@ function late_update(self, dt)
 	local current_yaw = go.get(".", EULER_Y)
 	local current_pitch = go.get(CAMERA_OFFSET, EULER_X)
 
-	current_yaw = current_yaw + (self.target_yaw - current_yaw) * rotation_alpha
+	current_yaw = lerp_angle(current_yaw, self.target_yaw, rotation_alpha)
 	current_pitch = current_pitch + (self.target_pitch - current_pitch) * rotation_alpha
 
 	go.set(".", EULER_Y, current_yaw)
