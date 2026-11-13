@@ -302,6 +302,8 @@ function M.render_shadow()
 	render.disable_material()
 	-- Animated component bounds can lag behind the skinned pose. Avoid CPU
 	-- frustum rejection here and let the shadow-camera raster pass clip it.
+	-- The component's depth-only material keeps the pose cache available without
+	-- sampling the shadow target while writing to it, which WebGL rejects.
 	render.draw(M.shadow_model_skinned_pred, M.shadow_depth_skinned_draw_options)
 
 	render.set_polygon_offset(0.0, 0.0)

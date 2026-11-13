@@ -60,7 +60,7 @@ platforms:
       excludeLibs: [physics, libbox2d_defold, script_box2d_defold, record, vpx, decoder_wav, liveupdate, image]
       excludeSymbols: [ScriptBox2DExt, AudioDecoderWav, ResourceTypeWav, ScriptImageExt, ScriptTypesExt]
       symbols: [AudioDecoderOpus, ResourceTypeOpus]
-      libs: [physics_3d, record_null, decoder_opus, libopus.lib, liveupdate_null, image_null]
+      libs: [physics_3d, record_null, decoder_opus, libopus, liveupdate_null, image_null]
       linkFlags: []
   wasm-web:
     context:

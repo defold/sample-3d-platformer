@@ -8,7 +8,7 @@ embedded_components {
   "name: \"{{NAME}}\"\n"
   "materials {\n"
   "  name: \"colormap\"\n"
-  "  material: \"/shadow_mapping/materials/high/diffuse_skinning.material\"\n"
+  "  material: \"/shadow_mapping/materials/low/shadow_skinning.material\"\n"
   "  textures {\n"
   "    sampler: \"tex0\"\n"
   "    texture: \"/assets/models/kenney_platformer-kit/Textures/colormap.png\"\n"

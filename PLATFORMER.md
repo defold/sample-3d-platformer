@@ -143,7 +143,11 @@ At startup, `tier_service.script` measures frame times and selects a global rend
 
 The render script applies tier materials centrally. The depth texture uses nearest filtering. Explicit PCF, polygon offset, and a normal-dependent receiver bias keep edges soft and reduce shadow acne. Shadows affect directional diffuse light but not ambient or other lights.
 
-The sampler order in every skinned material must remain `tex0`, `pose_matrix_cache`, `shadow_map`. Defold assigns the pose matrix cache to the first free model texture slot at runtime. Placing `shadow_map` before it causes the shadow shader to sample the pose texture instead, producing a fixed-looking dark region on animated models.
+The lit model shaders share camera matrices through `materials/model_uniforms.glsl`. Both shader stages use the same uniform block, so the view matrix does not occupy four interpolated varying slots. The `var_view` alias keeps Defold's lighting helpers working with the shared view uniform.
+
+The sampler order in lit skinned materials must remain `tex0`, `pose_matrix_cache`, `shadow_map`. Defold assigns the pose matrix cache to the first free model texture slot at runtime. Placing `shadow_map` before it causes the shadow shader to sample the pose texture instead, producing a fixed-looking dark region on animated models.
+
+The player model components use `low/shadow_skinning.material` for the depth pass. It has no `shadow_map` sampler, so it cannot read from the shadow texture while writing to it. WebGL rejects that feedback loop even when a uniform would skip shadow sampling in the fragment shader. The render script overrides this depth-only material with the selected lit material for the display pass.
 
 The pipeline uses one finite directional shadow map. Geometry outside it is lit, and point and spot lights do not cast shadows. See Defold's [Directional Light Shadows example](https://defold.com/examples/render/directional_light_shadows/) and the [Render](https://defold.com/manuals/render/), [Material](https://defold.com/manuals/material/), and [Shader](https://defold.com/manuals/shader/) manuals for more information.
 
